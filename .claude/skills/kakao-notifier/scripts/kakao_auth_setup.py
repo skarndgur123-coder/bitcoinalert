@@ -74,12 +74,14 @@ def main():
     code = wait_for_authorization_code(redirect_uri)
     payload = exchange_code_for_token(client_id, redirect_uri, code, client_secret)
 
+    obtained_at = datetime.now(timezone.utc).isoformat()
     token = {
         "access_token": payload["access_token"],
         "refresh_token": payload["refresh_token"],
-        "obtained_at": datetime.now(timezone.utc).isoformat(),
+        "obtained_at": obtained_at,
         "expires_in": payload["expires_in"],
         "refresh_token_expires_in": payload.get("refresh_token_expires_in"),
+        "refresh_token_obtained_at": obtained_at,
     }
 
     output_path = Path(token_store_path)

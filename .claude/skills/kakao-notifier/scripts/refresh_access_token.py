@@ -52,8 +52,24 @@ def ensure_valid_access_token(
     token["obtained_at"] = now.isoformat()
     if "refresh_token" in payload:
         token["refresh_token"] = payload["refresh_token"]
+        token["refresh_token_obtained_at"] = now.isoformat()
     if "refresh_token_expires_in" in payload:
         token["refresh_token_expires_in"] = payload["refresh_token_expires_in"]
 
     _save_token(token_store_path, token)
     return token["access_token"]
+
+
+def check_refresh_token_expiry(
+    token_store_path: str,
+    warn_within_days: float = 14,
+    now_fn=lambda: datetime.now(timezone.utc),
+) -> dict:
+    token = _load_token(token_store_path)
+    now = now_fn()
+
+    reference = datetime.fromisoformat(token.get("refresh_token_obtained_at", token["obtained_at"]))
+    expires_at = reference + timedelta(seconds=token["refresh_token_expires_in"])
+    days_remaining = (expires_at - now).total_seconds() / 86400
+
+    return {"days_remaining": days_remaining, "warn": days_remaining <= warn_within_days}

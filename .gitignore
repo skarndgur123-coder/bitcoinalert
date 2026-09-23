@@ -1,0 +1,8 @@
+secrets/
+.env
+output/*/
+!output/history.db
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

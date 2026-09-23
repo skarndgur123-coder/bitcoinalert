@@ -1,0 +1,28 @@
+market: "KRW-BTC"
+poll_interval_minutes: 5
+
+price_change:
+  5m:
+    window_minutes: 5
+    threshold_pct: 1.0
+    cooldown_minutes: 15
+  1h:
+    window_minutes: 60
+    threshold_pct: 3.0
+    cooldown_minutes: 60
+  24h:
+    window_minutes: 1440
+    threshold_pct: 5.0
+    cooldown_minutes: 240
+
+volume_spike:
+  candle_unit_minutes: 5
+  lookback_periods: 20
+  multiplier: 3.0
+  min_avg_volume: 0.01
+  cooldown_minutes: 15
+
+http:
+  timeout_seconds: 10
+  max_retries: 3
+  backoff_base_seconds: 2

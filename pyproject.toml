@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+pythonpath = [
+    ".claude/skills/price-watcher/scripts",
+    ".claude/skills/kakao-notifier/scripts",
+]
+testpaths = ["tests"]

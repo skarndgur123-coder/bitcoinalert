@@ -148,6 +148,54 @@ def test_refresh_keeps_refresh_token_obtained_at_when_kakao_does_not_rotate(tmp_
     assert saved["refresh_token_obtained_at"] == "2026-08-01T00:00:00+00:00"
 
 
+def _capture_post(captured):
+    def fake_post(url, data=None, timeout=None):
+        captured.update(data)
+
+        class FakeResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"access_token": "new_access", "expires_in": 21599}
+
+        return FakeResponse()
+
+    return fake_post
+
+
+def test_refresh_sends_client_secret_when_provided(tmp_path):
+    # Kakao apps with Client Secret enabled reject refresh without it (401 KOE010).
+    now = datetime(2026, 9, 22, 12, 0, 0, tzinfo=timezone.utc)
+    token_path = tmp_path / "kakao_token.json"
+    write_token_file(token_path, obtained_at=(now - timedelta(hours=6)).isoformat())
+    captured = {}
+
+    ensure_valid_access_token(
+        str(token_path),
+        client_id="client123",
+        client_secret="s3cret",
+        now_fn=lambda: now,
+        post_fn=_capture_post(captured),
+    )
+    assert captured["client_secret"] == "s3cret"
+
+
+def test_refresh_omits_client_secret_when_not_provided(tmp_path):
+    now = datetime(2026, 9, 22, 12, 0, 0, tzinfo=timezone.utc)
+    token_path = tmp_path / "kakao_token.json"
+    write_token_file(token_path, obtained_at=(now - timedelta(hours=6)).isoformat())
+    captured = {}
+
+    ensure_valid_access_token(
+        str(token_path),
+        client_id="client123",
+        now_fn=lambda: now,
+        post_fn=_capture_post(captured),
+    )
+    assert "client_secret" not in captured
+
+
 def test_check_refresh_token_expiry_warns_within_threshold(tmp_path):
     now = datetime(2026, 9, 22, 12, 0, 0, tzinfo=timezone.utc)
     token_path = tmp_path / "kakao_token.json"

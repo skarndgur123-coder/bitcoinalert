@@ -25,6 +25,7 @@ def _is_near_expiry(token: dict, safety_margin_minutes: float, now: datetime) ->
 def ensure_valid_access_token(
     token_store_path: str,
     client_id: str,
+    client_secret: str | None = None,
     safety_margin_minutes: float = 30,
     now_fn=lambda: datetime.now(timezone.utc),
     post_fn=requests.post,
@@ -35,15 +36,14 @@ def ensure_valid_access_token(
     if not _is_near_expiry(token, safety_margin_minutes, now):
         return token["access_token"]
 
-    response = post_fn(
-        TOKEN_URL,
-        data={
-            "grant_type": "refresh_token",
-            "client_id": client_id,
-            "refresh_token": token["refresh_token"],
-        },
-        timeout=10,
-    )
+    data = {
+        "grant_type": "refresh_token",
+        "client_id": client_id,
+        "refresh_token": token["refresh_token"],
+    }
+    if client_secret:
+        data["client_secret"] = client_secret
+    response = post_fn(TOKEN_URL, data=data, timeout=10)
     response.raise_for_status()
     payload = response.json()
 

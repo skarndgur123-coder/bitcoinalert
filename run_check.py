@@ -10,6 +10,7 @@ ROOT = Path(__file__).parent
 sys.path.insert(0, str(ROOT / ".claude/skills/price-watcher/scripts"))
 sys.path.insert(0, str(ROOT / ".claude/skills/kakao-notifier/scripts"))
 
+import requests
 from dotenv import load_dotenv
 
 from _config import load_thresholds
@@ -34,7 +35,7 @@ AUTH_WARNING_COOLDOWN_MINUTES = 1440
 AUTH_WARNING_WITHIN_DAYS = 14
 
 
-def _maybe_warn_auth_expiry(now: datetime, client_id: str, token_store_path: Path) -> None:
+def _maybe_warn_auth_expiry(now: datetime, client_id: str, client_secret: str | None, token_store_path: Path) -> None:
     expiry = check_refresh_token_expiry(
         str(token_store_path), warn_within_days=AUTH_WARNING_WITHIN_DAYS, now_fn=lambda: now
     )
@@ -55,9 +56,9 @@ def _maybe_warn_auth_expiry(now: datetime, client_id: str, token_store_path: Pat
     template_object = build_template_object(text)
 
     try:
-        access_token = ensure_valid_access_token(str(token_store_path), client_id=client_id)
+        access_token = ensure_valid_access_token(str(token_store_path), client_id=client_id, client_secret=client_secret)
         send_with_retry(access_token, template_object)
-    except KakaoSendError as exc:
+    except (KakaoSendError, requests.RequestException) as exc:
         append_jsonl(
             str(ERROR_LOG_PATH), {"ts": now.isoformat(), "stage": "auth_expiry_warning", "error": str(exc)}
         )
@@ -82,9 +83,10 @@ def run_once(dry_run: bool = False) -> int:
 
     token_store_path = ROOT / os.environ.get("KAKAO_TOKEN_STORE_PATH", "secrets/kakao_token.json")
     client_id = os.environ["KAKAO_REST_API_KEY"]
+    client_secret = os.environ.get("KAKAO_CLIENT_SECRET") or None
 
     if not dry_run:
-        _maybe_warn_auth_expiry(now, client_id=client_id, token_store_path=token_store_path)
+        _maybe_warn_auth_expiry(now, client_id=client_id, client_secret=client_secret, token_store_path=token_store_path)
 
     try:
         snapshot = fetch_snapshot(thresholds["market"], thresholds)
@@ -131,9 +133,9 @@ def run_once(dry_run: bool = False) -> int:
     template_object = build_template_object(message)
 
     try:
-        access_token = ensure_valid_access_token(str(token_store_path), client_id=client_id)
+        access_token = ensure_valid_access_token(str(token_store_path), client_id=client_id, client_secret=client_secret)
         send_with_retry(access_token, template_object)
-    except KakaoSendError as exc:
+    except (KakaoSendError, requests.RequestException) as exc:
         append_jsonl(str(ERROR_LOG_PATH), {"ts": now.isoformat(), "stage": "send", "error": str(exc)})
         append_jsonl(
             str(RUN_LOG_PATH),

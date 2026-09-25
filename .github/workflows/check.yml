@@ -1,4 +1,6 @@
 # Bitcoinalert 5-minute polling pipeline
+# GitHub delays `schedule` by hours in practice, so an external cron (cron-job.org)
+# calls workflow_dispatch every 5 minutes; `schedule` is kept only as a fallback.
 name: check
 
 on:

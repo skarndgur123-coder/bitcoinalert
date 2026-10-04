@@ -18,7 +18,7 @@ price_change:
 volume_spike:
   candle_unit_minutes: 5
   lookback_periods: 20
-  multiplier: 2.5
+  multiplier: 3.5
   min_avg_volume: 0.01
   cooldown_minutes: 15
 
